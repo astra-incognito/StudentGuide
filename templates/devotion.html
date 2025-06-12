@@ -41,7 +41,7 @@
                 <div class="card text-center">
                     <div class="card-body">
                         <i class="fas fa-calendar-check fa-2x text-success mb-2"></i>
-                        <h4>{{ entries|selectattr('date', 'equalto', today())|list|length }}</h4>
+                        <h4>0</h4>
                         <p class="mb-0">Today's Entries</p>
                     </div>
                 </div>
@@ -222,7 +222,7 @@
                         </div>
                         <div class="col-md-4">
                             <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="date" name="date" value="{{ today().isoformat() }}">
+                            <input type="date" class="form-control" id="date" name="date" value="{{ today() }}">
                         </div>
                         <div class="col-12">
                             <label for="scripture" class="form-label">Scripture Reference</label>

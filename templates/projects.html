@@ -374,8 +374,7 @@
                 <h5 class="modal-title"><i class="fas fa-user-plus"></i> Invite Team Member</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('invite_project_member') }}">
-                <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+            <form method="POST" action="{{ url_for('invite_project_member', project_id=selected_project.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="invite_email" class="form-label">Email Address *</label>

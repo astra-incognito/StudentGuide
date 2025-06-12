@@ -353,7 +353,7 @@ def add_finance_entry():
 def devotion():
     """Bible study and devotion tracking"""
     all_entries = data_store.get_all_devotion_entries()
-    return render_template('devotion.html', entries=all_entries)
+    return render_template('devotion.html', entries=all_entries, today=date.today)
 
 @app.route('/devotion/add', methods=['POST'])
 def add_devotion_entry():
@@ -461,9 +461,8 @@ def move_project_task(task_id):
     return redirect(url_for('projects', project_id=project_id))
 
 @app.route('/projects/<project_id>/invite', methods=['POST'])
-def invite_project_member():
+def invite_project_member(project_id):
     """Invite a member to join a project via email"""
-    project_id = request.form.get('project_id')
     email = request.form.get('email')
     message = request.form.get('message', '')
     invited_by = request.form.get('invited_by', 'Project Admin')
@@ -506,9 +505,8 @@ def project_members(project_id):
                          pending_invitations=pending_invitations)
 
 @app.route('/projects/<project_id>/members/remove', methods=['POST'])
-def remove_project_member():
+def remove_project_member(project_id):
     """Remove a member from a project"""
-    project_id = request.form.get('project_id')
     email = request.form.get('email')
     
     try:
