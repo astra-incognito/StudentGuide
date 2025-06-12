@@ -325,7 +325,7 @@ def finances():
     # Sort by date (most recent first)
     all_entries.sort(key=lambda x: x.date, reverse=True)
     
-    return render_template('finances.html', entries=all_entries, summary=summary)
+    return render_template('finances.html', entries=all_entries, summary=summary, today=date.today)
 
 @app.route('/finances/add', methods=['POST'])
 def add_finance_entry():
