@@ -1,10 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
-from app import app
-from data_store import data_store
+from flask import render_template, request, redirect, url_for, flash, jsonify, session
+from app import app, db
 from models import *
 from datetime import datetime, date, timedelta
 import logging
 import os
+import uuid
 
 def send_invitation_email(email, project_id, invitation_id, message=""):
     """Send project invitation email using SendGrid"""
@@ -76,15 +76,22 @@ def send_invitation_email(email, project_id, invitation_id, message=""):
 @app.route('/')
 def dashboard():
     """Main dashboard with overview widgets"""
-    stats = data_store.get_dashboard_stats()
-    quote = data_store.get_random_quote()
-    
-    # Get recent items for dashboard widgets
-    recent_tasks = sorted([t for t in data_store.get_all_tasks() if t.status != "completed"], 
-                         key=lambda x: x.due_date or date.max)[:5]
-    upcoming_events = data_store.get_calendar_events(date.today(), date.today() + timedelta(days=7))[:5]
-    active_habits = data_store.get_all_habits()[:5]
-    
+    # Dashboard stats (example: count queries)
+    stats = {
+        'pending_tasks': Task.query.filter_by(status='pending').count(),
+        'overdue_tasks': Task.query.filter(Task.due_date < date.today(), Task.status != 'completed').count(),
+        'completed_today': Task.query.filter(Task.completed_at != None, db.func.date(Task.completed_at) == date.today()).count(),
+        'habits_completed_today': Habit.query.filter(Habit.last_completed == date.today()).count(),
+        'active_streaks': db.session.query(db.func.sum(Habit.streak)).scalar() or 0,
+        'active_goals': Goal.query.filter_by(status='active').count(),
+        'avg_goal_progress': round(db.session.query(db.func.avg(Goal.progress)).scalar() or 0, 1),
+        'total_courses': Course.query.count(),
+        'total_projects': Project.query.count()
+    }
+    quote = "Education is the most powerful weapon which you can use to change the world. - Nelson Mandela"  # Placeholder
+    recent_tasks = Task.query.filter(Task.status != "completed").order_by(Task.due_date.asc().nullslast()).limit(5).all()
+    upcoming_events = CalendarEvent.query.filter(CalendarEvent.start_date >= date.today(), CalendarEvent.start_date <= date.today() + timedelta(days=7)).order_by(CalendarEvent.start_date.asc()).limit(5).all()
+    active_habits = Habit.query.limit(5).all()
     return render_template('dashboard.html', 
                          stats=stats, 
                          quote=quote,
@@ -95,22 +102,17 @@ def dashboard():
 @app.route('/tasks')
 def tasks():
     """Task and assignment management"""
-    all_tasks = data_store.get_all_tasks()
-    courses = data_store.get_all_courses()
-    
+    all_tasks = Task.query.all()
+    courses = Course.query.all()
     # Filter tasks by status and category
     filter_status = request.args.get('status', 'all')
     filter_category = request.args.get('category', 'all')
-    
     filtered_tasks = all_tasks
     if filter_status != 'all':
         filtered_tasks = [t for t in filtered_tasks if t.status == filter_status]
     if filter_category != 'all':
         filtered_tasks = [t for t in filtered_tasks if t.category == filter_category]
-    
-    # Sort by due date
     filtered_tasks.sort(key=lambda x: x.due_date or date.max)
-    
     return render_template('tasks.html', 
                          tasks=filtered_tasks, 
                          courses=courses,
@@ -124,8 +126,8 @@ def add_task():
         due_date = None
         if request.form.get('due_date'):
             due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
-        
         task = Task(
+            id=str(uuid.uuid4()),
             title=request.form.get('title'),
             description=request.form.get('description', ''),
             due_date=due_date,
@@ -133,52 +135,49 @@ def add_task():
             category=request.form.get('category', 'general'),
             course_id=request.form.get('course_id') if request.form.get('course_id') else None
         )
-        
-        data_store.add_task(task)
+        db.session.add(task)
+        db.session.commit()
         flash('Task added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding task: {e}")
         flash('Error adding task. Please try again.', 'error')
-    
     return redirect(url_for('tasks'))
 
 @app.route('/tasks/<task_id>/complete', methods=['POST'])
 def complete_task(task_id):
     """Mark a task as completed"""
-    success = data_store.update_task(task_id, 
-                                   status='completed', 
-                                   completed_at=datetime.now())
-    if success:
-        flash('Task completed!', 'success')
+    task = Task.query.get(task_id)
+    if task:
+        task.status = 'completed'
+        task.completed_at = datetime.now()
+        db.session.commit()
+        flash('Task marked as completed!', 'success')
     else:
         flash('Task not found.', 'error')
-    
     return redirect(url_for('tasks'))
 
 @app.route('/tasks/<task_id>/delete', methods=['POST'])
 def delete_task(task_id):
     """Delete a task"""
-    success = data_store.delete_task(task_id)
-    if success:
+    task = Task.query.get(task_id)
+    if task:
+        db.session.delete(task)
+        db.session.commit()
         flash('Task deleted successfully!', 'success')
     else:
         flash('Task not found.', 'error')
-    
     return redirect(url_for('tasks'))
 
 @app.route('/calendar')
 def calendar():
     """Calendar and scheduling view"""
-    # Get current month events
     today = date.today()
     start_of_month = today.replace(day=1)
     if today.month == 12:
         end_of_month = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
     else:
         end_of_month = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
-    
-    events = data_store.get_calendar_events(start_of_month, end_of_month)
-    
+    events = CalendarEvent.query.filter(CalendarEvent.start_date >= start_of_month, CalendarEvent.start_date <= end_of_month).all()
     return render_template('calendar.html', events=events, today=today)
 
 @app.route('/calendar/add', methods=['POST'])
@@ -186,8 +185,8 @@ def add_calendar_event():
     """Add a new calendar event"""
     try:
         start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
-        
         event = CalendarEvent(
+            id=str(uuid.uuid4()),
             title=request.form.get('title'),
             description=request.form.get('description', ''),
             start_date=start_date,
@@ -196,19 +195,18 @@ def add_calendar_event():
             type=request.form.get('type', 'event'),
             reminder_minutes=int(request.form.get('reminder_minutes', 15))
         )
-        
-        data_store.add_calendar_event(event)
-        flash('Event added successfully!', 'success')
+        db.session.add(event)
+        db.session.commit()
+        flash('Event added to calendar!', 'success')
     except Exception as e:
-        logging.error(f"Error adding event: {e}")
-        flash('Error adding event. Please try again.', 'error')
-    
+        logging.error(f"Error adding calendar event: {e}")
+        flash('Error adding calendar event. Please try again.', 'error')
     return redirect(url_for('calendar'))
 
 @app.route('/courses')
 def courses():
     """Course management"""
-    all_courses = data_store.get_all_courses()
+    all_courses = Course.query.all()
     return render_template('courses.html', courses=all_courses)
 
 @app.route('/courses/add', methods=['POST'])
@@ -216,6 +214,7 @@ def add_course():
     """Add a new course"""
     try:
         course = Course(
+            id=str(uuid.uuid4()),
             name=request.form.get('name'),
             code=request.form.get('code', ''),
             instructor=request.form.get('instructor', ''),
@@ -224,8 +223,8 @@ def add_course():
             description=request.form.get('description', ''),
             color=request.form.get('color', '#007bff')
         )
-        
-        data_store.add_course(course)
+        db.session.add(course)
+        db.session.commit()
         flash('Course added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding course: {e}")
@@ -236,7 +235,7 @@ def add_course():
 @app.route('/habits')
 def habits():
     """Habit tracking"""
-    all_habits = data_store.get_all_habits()
+    all_habits = Habit.query.all()
     return render_template('habits.html', habits=all_habits, today=date.today())
 
 @app.route('/habits/add', methods=['POST'])
@@ -244,34 +243,43 @@ def add_habit():
     """Add a new habit"""
     try:
         habit = Habit(
+            id=str(uuid.uuid4()),
             name=request.form.get('name'),
             description=request.form.get('description', ''),
             target_frequency=request.form.get('target_frequency', 'daily')
         )
-        
-        data_store.add_habit(habit)
+        db.session.add(habit)
+        db.session.commit()
         flash('Habit added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding habit: {e}")
         flash('Error adding habit. Please try again.', 'error')
-    
     return redirect(url_for('habits'))
 
 @app.route('/habits/<habit_id>/complete', methods=['POST'])
 def complete_habit(habit_id):
     """Mark a habit as completed for today"""
-    success = data_store.complete_habit(habit_id)
-    if success:
+    habit = Habit.query.get(habit_id)
+    if habit:
+        today_str = date.today().isoformat()
+        if habit.completion_dates is None:
+            habit.completion_dates = []
+        if today_str not in habit.completion_dates:
+            habit.completion_dates.append(today_str)
+            habit.last_completed = date.today()
+            habit.streak = (habit.streak or 0) + 1
+            if habit.streak > (habit.best_streak or 0):
+                habit.best_streak = habit.streak
+            db.session.commit()
         flash('Habit completed for today!', 'success')
     else:
         flash('Habit not found.', 'error')
-    
     return redirect(url_for('habits'))
 
 @app.route('/goals')
 def goals():
     """Goal setting and tracking"""
-    all_goals = data_store.get_all_goals()
+    all_goals = Goal.query.all()
     return render_template('goals.html', goals=all_goals)
 
 @app.route('/goals/add', methods=['POST'])
@@ -281,21 +289,20 @@ def add_goal():
         target_date = None
         if request.form.get('target_date'):
             target_date = datetime.strptime(request.form.get('target_date'), '%Y-%m-%d').date()
-        
         goal = Goal(
+            id=str(uuid.uuid4()),
             title=request.form.get('title'),
             description=request.form.get('description', ''),
             category=request.form.get('category', 'academic'),
             target_date=target_date,
             progress=int(request.form.get('progress', 0))
         )
-        
-        data_store.add_goal(goal)
+        db.session.add(goal)
+        db.session.commit()
         flash('Goal added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding goal: {e}")
         flash('Error adding goal. Please try again.', 'error')
-    
     return redirect(url_for('goals'))
 
 @app.route('/goals/<goal_id>/update_progress', methods=['POST'])
@@ -303,56 +310,59 @@ def update_goal_progress(goal_id):
     """Update goal progress"""
     try:
         progress = int(request.form.get('progress', 0))
-        progress = max(0, min(100, progress))  # Ensure between 0-100
-        
-        success = data_store.update_goal(goal_id, progress=progress)
-        if success:
+        progress = max(0, min(100, progress))
+        goal = Goal.query.get(goal_id)
+        if goal:
+            goal.progress = progress
+            db.session.commit()
             flash('Goal progress updated!', 'success')
         else:
             flash('Goal not found.', 'error')
     except Exception as e:
         logging.error(f"Error updating goal progress: {e}")
         flash('Error updating progress. Please try again.', 'error')
-    
     return redirect(url_for('goals'))
 
 @app.route('/finances')
 def finances():
     """Financial tracking"""
-    all_entries = data_store.get_all_finance_entries()
-    summary = data_store.get_finance_summary()
-    
-    # Sort by date (most recent first)
-    all_entries.sort(key=lambda x: x.date, reverse=True)
-    
-    return render_template('finances.html', entries=all_entries, summary=summary, today=date.today)
+    all_entries = FinanceEntry.query.order_by(FinanceEntry.date.desc()).all()
+    # Calculate summary
+    total_income = sum(e.amount for e in all_entries if getattr(e, 'type', None) == 'income')
+    total_expenses = sum(e.amount for e in all_entries if getattr(e, 'type', None) == 'expense')
+    balance = total_income - total_expenses
+    summary = {
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'balance': balance
+    }
+    return render_template('finances.html', entries=all_entries, summary=summary, today=date.today)  # Pass today as a function, not a value
 
 @app.route('/finances/add', methods=['POST'])
 def add_finance_entry():
     """Add a new financial entry"""
     try:
         entry_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        
         entry = FinanceEntry(
+            id=str(uuid.uuid4()),
             description=request.form.get('description'),
             amount=float(request.form.get('amount')),
             category=request.form.get('category', 'other'),
             type=request.form.get('type', 'expense'),
             date=entry_date
         )
-        
-        data_store.add_finance_entry(entry)
+        db.session.add(entry)
+        db.session.commit()
         flash('Financial entry added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding finance entry: {e}")
         flash('Error adding financial entry. Please try again.', 'error')
-    
     return redirect(url_for('finances'))
 
 @app.route('/devotion')
 def devotion():
     """Bible study and devotion tracking"""
-    all_entries = data_store.get_all_devotion_entries()
+    all_entries = DevotionEntry.query.order_by(DevotionEntry.date.desc()).all()
     return render_template('devotion.html', entries=all_entries, today=date.today)
 
 @app.route('/devotion/add', methods=['POST'])
@@ -360,8 +370,8 @@ def add_devotion_entry():
     """Add a new devotion entry"""
     try:
         entry_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        
         entry = DevotionEntry(
+            id=str(uuid.uuid4()),
             title=request.form.get('title'),
             scripture=request.form.get('scripture', ''),
             notes=request.form.get('notes', ''),
@@ -369,33 +379,28 @@ def add_devotion_entry():
             date=entry_date,
             duration_minutes=int(request.form.get('duration_minutes', 0))
         )
-        
-        data_store.add_devotion_entry(entry)
+        db.session.add(entry)
+        db.session.commit()
         flash('Devotion entry added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding devotion entry: {e}")
         flash('Error adding devotion entry. Please try again.', 'error')
-    
     return redirect(url_for('devotion'))
 
 @app.route('/projects')
 def projects():
     """Project management with Kanban boards"""
-    all_projects = data_store.get_all_projects()
-    
-    # Get project with tasks for Kanban view
+    all_projects = Project.query.all()
     selected_project_id = request.args.get('project_id')
     selected_project = None
     project_tasks = {"todo": [], "in_progress": [], "done": []}
-    
     if selected_project_id:
-        selected_project = next((p for p in all_projects if p.id == selected_project_id), None)
+        selected_project = Project.query.get(selected_project_id)
         if selected_project:
-            tasks = data_store.get_project_tasks(selected_project_id)
+            tasks = ProjectTask.query.filter_by(project_id=selected_project_id).all()
             for task in tasks:
                 project_tasks[task.status].append(task)
-    
-    return render_template('projects.html', 
+    return render_template('projects.html',
                          projects=all_projects,
                          selected_project=selected_project,
                          project_tasks=project_tasks)
@@ -407,20 +412,19 @@ def add_project():
         due_date = None
         if request.form.get('due_date'):
             due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
-        
         project = Project(
+            id=str(uuid.uuid4()),
             name=request.form.get('name'),
             description=request.form.get('description', ''),
             due_date=due_date,
             status=request.form.get('status', 'planning')
         )
-        
-        data_store.add_project(project)
+        db.session.add(project)
+        db.session.commit()
         flash('Project added successfully!', 'success')
     except Exception as e:
         logging.error(f"Error adding project: {e}")
         flash('Error adding project. Please try again.', 'error')
-    
     return redirect(url_for('projects'))
 
 @app.route('/projects/<project_id>/tasks/add', methods=['POST'])
@@ -428,37 +432,33 @@ def add_project_task(project_id):
     """Add a task to a project"""
     try:
         task = ProjectTask(
-            title=request.form.get('title'),
-            description=request.form.get('description', ''),
+            id=str(uuid.uuid4()),
+            title=request.form.get('task_title'),
+            description=request.form.get('task_description', ''),
+            status=request.form.get('status', 'todo'),
             project_id=project_id,
-            priority=request.form.get('priority', 'medium'),
-            status='todo'
+            assigned_to=request.form.get('assigned_to', ''),
+            priority=request.form.get('priority', 'medium')
         )
-        
-        data_store.add_project_task(task)
+        db.session.add(task)
+        db.session.commit()
         flash('Task added to project!', 'success')
     except Exception as e:
         logging.error(f"Error adding project task: {e}")
-        flash('Error adding task. Please try again.', 'error')
-    
+        flash('Error adding project task. Please try again.', 'error')
     return redirect(url_for('projects', project_id=project_id))
 
 @app.route('/projects/tasks/<task_id>/move', methods=['POST'])
 def move_project_task(task_id):
     """Move a project task to different status column"""
-    try:
-        new_status = request.form.get('status')
-        if new_status in ['todo', 'in_progress', 'done']:
-            data_store.update_project_task(task_id, status=new_status)
-            flash('Task moved successfully!', 'success')
-        else:
-            flash('Invalid status.', 'error')
-    except Exception as e:
-        logging.error(f"Error moving task: {e}")
-        flash('Error moving task. Please try again.', 'error')
-    
-    project_id = request.form.get('project_id')
-    return redirect(url_for('projects', project_id=project_id))
+    task = ProjectTask.query.get(task_id)
+    if task:
+        task.status = request.form.get('status', task.status)
+        db.session.commit()
+        flash('Task moved successfully!', 'success')
+    else:
+        flash('Task not found.', 'error')
+    return redirect(url_for('projects', project_id=request.form.get('project_id')))
 
 @app.route('/projects/<project_id>/invite', methods=['POST'])
 def invite_project_member(project_id):
@@ -486,122 +486,117 @@ def invite_project_member(project_id):
 @app.route('/projects/<project_id>/members')
 def project_members(project_id):
     """View and manage project members"""
-    project = None
-    for p in data_store.get_all_projects():
-        if p.id == project_id:
-            project = p
-            break
-    
+    project = Project.query.get(project_id)
     if not project:
         flash('Project not found.', 'error')
         return redirect(url_for('projects'))
-    
-    members = data_store.get_project_members(project_id)
-    pending_invitations = data_store.get_pending_invitations(project_id)
-    
+    # Placeholder: You should implement a ProjectMember model and query members from the database
+    members = []
+    pending_invitations = []
     return render_template('project_members.html', 
                          project=project, 
                          members=members,
                          pending_invitations=pending_invitations)
 
-@app.route('/projects/<project_id>/members/remove', methods=['POST'])
-def remove_project_member(project_id):
-    """Remove a member from a project"""
-    email = request.form.get('email')
-    
-    try:
-        if data_store.remove_project_member(project_id, email):
-            flash(f'Member {email} removed from project.', 'success')
-        else:
-            flash('Error removing member.', 'error')
-    except Exception as e:
-        logging.error(f"Error removing member: {e}")
-        flash('Error removing member. Please try again.', 'error')
-    
-    return redirect(url_for('project_members', project_id=project_id))
-
-@app.route('/invite/<invitation_id>/accept')
-def accept_project_invitation(invitation_id):
-    """Accept a project invitation"""
-    try:
-        if data_store.accept_invitation(invitation_id):
-            flash('Invitation accepted! You are now a member of the project.', 'success')
-        else:
-            flash('Invalid or expired invitation.', 'error')
-    except Exception as e:
-        logging.error(f"Error accepting invitation: {e}")
-        flash('Error processing invitation.', 'error')
-    
-    return redirect(url_for('projects'))
-
 @app.route('/projects/<project_id>/activity')
 def project_activity(project_id):
     """View project activity timeline"""
-    project = None
-    for p in data_store.get_all_projects():
-        if p.id == project_id:
-            project = p
-            break
-    
+    project = Project.query.get(project_id)
     if not project:
         flash('Project not found.', 'error')
         return redirect(url_for('projects'))
-    
-    # Get recent activity (this would be expanded with actual activity tracking)
-    activities = [
-        {"user": "admin@example.com", "action": "created project", "timestamp": datetime.now()},
-        {"user": "member@example.com", "action": "added new task", "timestamp": datetime.now()},
-    ]
-    
+    # Placeholder: You should implement a ProjectActivity model and query activities from the database
+    activities = []
     return render_template('project_activity.html', 
                          project=project, 
-                         activities=activities)
+                         activities=activities, 
+                         today=date.today)  # Pass today as a function for template
 
-@app.route('/settings')
+@app.route('/settings', methods=['GET', 'POST'])
 def settings():
     """Application settings and preferences"""
-    return render_template('settings.html')
+    # Settings model: id, student_name, university, major, grad_year, notification_prefs, theme, accent_color, compact_mode, animations, gpa_scale, default_task_category, week_start, show_gpa
+    from models import Settings
+    user_id = 1  # For demo, use a static user id. Replace with real user id in production.
+    settings = Settings.query.get(user_id)
+    if request.method == 'POST':
+        # General
+        settings.student_name = request.form.get('studentName')
+        settings.university = request.form.get('university')
+        settings.major = request.form.get('major')
+        settings.grad_year = request.form.get('gradYear')
+        # Notifications
+        settings.task_reminders = 'taskReminders' in request.form
+        settings.habit_reminders = 'habitReminders' in request.form
+        settings.devotion_reminders = 'devotionReminders' in request.form
+        settings.calendar_notifications = 'calendarNotifications' in request.form
+        settings.reminder_time = request.form.get('reminderTime')
+        # Theme
+        settings.theme = request.form.get('theme')
+        settings.accent_color = request.form.get('accentColor')
+        settings.compact_mode = 'compactMode' in request.form
+        settings.animations = 'animations' in request.form
+        # Academic
+        settings.gpa_scale = request.form.get('gpaScale')
+        settings.default_task_category = request.form.get('defaultTaskCategory')
+        settings.week_start = request.form.get('weekStart')
+        settings.show_gpa = 'showGpa' in request.form
+        db.session.commit()
+        flash('Settings updated!', 'success')
+        return redirect(url_for('settings'))
+    if not settings:
+        settings = Settings(id=user_id)
+        db.session.add(settings)
+        db.session.commit()
+    return render_template('settings.html', settings=settings)
 
 # API endpoints for AJAX functionality
 @app.route('/api/dashboard/stats')
 def api_dashboard_stats():
     """Get dashboard statistics as JSON"""
-    return jsonify(data_store.get_dashboard_stats())
+    stats = {
+        'pending_tasks': Task.query.filter_by(status='pending').count(),
+        'overdue_tasks': Task.query.filter(Task.due_date < date.today(), Task.status != 'completed').count(),
+        'completed_today': Task.query.filter(Task.completed_at != None, db.func.date(Task.completed_at) == date.today()).count(),
+        'habits_completed_today': Habit.query.filter(Habit.last_completed == date.today()).count(),
+        'active_streaks': db.session.query(db.func.sum(Habit.streak)).scalar() or 0,
+        'active_goals': Goal.query.filter_by(status='active').count(),
+        'avg_goal_progress': round(db.session.query(db.func.avg(Goal.progress)).scalar() or 0, 1),
+        'total_courses': Course.query.count(),
+        'total_projects': Project.query.count()
+    }
+    return jsonify(stats)
 
 @app.route('/api/habits/chart_data')
 def api_habits_chart_data():
     """Get habit completion data for charts"""
-    habits = data_store.get_all_habits()
+    habits = Habit.query.all()
     chart_data = []
-    
     for habit in habits:
+        days = max(1, (date.today() - habit.created_at.date()).days)
+        completion_rate = len(habit.completion_dates or []) / days * 100
         chart_data.append({
             'name': habit.name,
             'streak': habit.streak,
             'best_streak': habit.best_streak,
-            'completion_rate': len(habit.completion_dates) / max(1, (date.today() - habit.created_at.date()).days) * 100
+            'completion_rate': completion_rate
         })
-    
     return jsonify(chart_data)
 
 @app.route('/api/finances/chart_data')
 def api_finances_chart_data():
     """Get financial data for charts"""
-    entries = data_store.get_all_finance_entries()
-    
-    # Group by category
+    entries = FinanceEntry.query.all()
     categories = {}
     for entry in entries:
         if entry.type == 'expense':
             if entry.category not in categories:
                 categories[entry.category] = 0
             categories[entry.category] += entry.amount
-    
     chart_data = {
         'labels': list(categories.keys()),
         'data': list(categories.values())
     }
-    
     return jsonify(chart_data)
 
 # Error handlers

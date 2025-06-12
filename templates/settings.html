@@ -21,22 +21,22 @@
                     <h5 class="mb-0"><i class="fas fa-user"></i> General Settings</h5>
                 </div>
                 <div class="card-body">
-                    <form>
+                    <form method="POST" action="{{ url_for('settings') }}">
                         <div class="mb-3">
                             <label for="studentName" class="form-label">Student Name</label>
-                            <input type="text" class="form-control" id="studentName" placeholder="Enter your name">
+                            <input type="text" class="form-control" id="studentName" name="studentName" value="{{ settings.student_name or '' }}" placeholder="Enter your name">
                         </div>
                         <div class="mb-3">
                             <label for="university" class="form-label">University/School</label>
-                            <input type="text" class="form-control" id="university" placeholder="Enter your institution">
+                            <input type="text" class="form-control" id="university" name="university" value="{{ settings.university or '' }}" placeholder="Enter your institution">
                         </div>
                         <div class="mb-3">
                             <label for="major" class="form-label">Major/Field of Study</label>
-                            <input type="text" class="form-control" id="major" placeholder="Enter your major">
+                            <input type="text" class="form-control" id="major" name="major" value="{{ settings.major or '' }}" placeholder="Enter your major">
                         </div>
                         <div class="mb-3">
                             <label for="gradYear" class="form-label">Expected Graduation Year</label>
-                            <input type="number" class="form-control" id="gradYear" placeholder="2025" min="2024" max="2030">
+                            <input type="number" class="form-control" id="gradYear" name="gradYear" value="{{ settings.grad_year or '' }}" placeholder="2025" min="2024" max="2030">
                         </div>
                         <button type="submit" class="btn btn-primary">Save General Settings</button>
                     </form>
@@ -51,10 +51,10 @@
                     <h5 class="mb-0"><i class="fas fa-bell"></i> Notification Settings</h5>
                 </div>
                 <div class="card-body">
-                    <form>
+                    <form method="POST" action="{{ url_for('settings') }}">
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="taskReminders" checked>
+                                <input class="form-check-input" type="checkbox" id="taskReminders" name="taskReminders" {% if settings.task_reminders %}checked{% endif %}>
                                 <label class="form-check-label" for="taskReminders">
                                     Task Due Date Reminders
                                 </label>
@@ -62,7 +62,7 @@
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="habitReminders" checked>
+                                <input class="form-check-input" type="checkbox" id="habitReminders" name="habitReminders" {% if settings.habit_reminders %}checked{% endif %}>
                                 <label class="form-check-label" for="habitReminders">
                                     Daily Habit Reminders
                                 </label>
@@ -70,7 +70,7 @@
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="devotionReminders" checked>
+                                <input class="form-check-input" type="checkbox" id="devotionReminders" name="devotionReminders" {% if settings.devotion_reminders %}checked{% endif %}>
                                 <label class="form-check-label" for="devotionReminders">
                                     Devotion Time Reminders
                                 </label>
@@ -78,7 +78,7 @@
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="calendarNotifications" checked>
+                                <input class="form-check-input" type="checkbox" id="calendarNotifications" name="calendarNotifications" {% if settings.calendar_notifications %}checked{% endif %}>
                                 <label class="form-check-label" for="calendarNotifications">
                                     Calendar Event Notifications
                                 </label>
@@ -86,12 +86,12 @@
                         </div>
                         <div class="mb-3">
                             <label for="reminderTime" class="form-label">Default Reminder Time</label>
-                            <select class="form-select" id="reminderTime">
-                                <option value="5">5 minutes before</option>
-                                <option value="15" selected>15 minutes before</option>
-                                <option value="30">30 minutes before</option>
-                                <option value="60">1 hour before</option>
-                                <option value="1440">1 day before</option>
+                            <select class="form-select" id="reminderTime" name="reminderTime">
+                                <option value="5" {% if settings.reminder_time == '5' %}selected{% endif %}>5 minutes before</option>
+                                <option value="15" {% if settings.reminder_time == '15' %}selected{% endif %}>15 minutes before</option>
+                                <option value="30" {% if settings.reminder_time == '30' %}selected{% endif %}>30 minutes before</option>
+                                <option value="60" {% if settings.reminder_time == '60' %}selected{% endif %}>1 hour before</option>
+                                <option value="1440" {% if settings.reminder_time == '1440' %}selected{% endif %}>1 day before</option>
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Save Notification Settings</button>
@@ -107,22 +107,22 @@
                     <h5 class="mb-0"><i class="fas fa-palette"></i> Theme & Display</h5>
                 </div>
                 <div class="card-body">
-                    <form>
+                    <form method="POST" action="{{ url_for('settings') }}">
                         <div class="mb-3">
                             <label for="theme" class="form-label">Color Theme</label>
-                            <select class="form-select" id="theme">
-                                <option value="dark" selected>Dark Theme (Current)</option>
-                                <option value="light">Light Theme</option>
-                                <option value="auto">Auto (System)</option>
+                            <select class="form-select" id="theme" name="theme">
+                                <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Dark Theme</option>
+                                <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Light Theme</option>
+                                <option value="auto" {% if settings.theme == 'auto' %}selected{% endif %}>Auto (System)</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="accentColor" class="form-label">Accent Color</label>
-                            <input type="color" class="form-control form-control-color" id="accentColor" value="#0d6efd" title="Choose accent color">
+                            <input type="color" class="form-control form-control-color" id="accentColor" name="accentColor" value="{{ settings.accent_color or '#0d6efd' }}" title="Choose accent color">
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="compactMode">
+                                <input class="form-check-input" type="checkbox" id="compactMode" name="compactMode" {% if settings.compact_mode %}checked{% endif %}>
                                 <label class="form-check-label" for="compactMode">
                                     Compact Mode (Smaller spacing)
                                 </label>
@@ -130,7 +130,7 @@
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="animations" checked>
+                                <input class="form-check-input" type="checkbox" id="animations" name="animations" {% if settings.animations %}checked{% endif %}>
                                 <label class="form-check-label" for="animations">
                                     Enable Animations
                                 </label>
@@ -178,36 +178,36 @@
                     <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Academic Settings</h5>
                 </div>
                 <div class="card-body">
-                    <form>
+                    <form method="POST" action="{{ url_for('settings') }}">
                         <div class="mb-3">
                             <label for="gpaScale" class="form-label">GPA Scale</label>
-                            <select class="form-select" id="gpaScale">
-                                <option value="4.0" selected>4.0 Scale</option>
-                                <option value="5.0">5.0 Scale</option>
-                                <option value="10.0">10.0 Scale</option>
-                                <option value="100">100 Point Scale</option>
+                            <select class="form-select" id="gpaScale" name="gpaScale">
+                                <option value="4.0" {% if settings.gpa_scale == '4.0' %}selected{% endif %}>4.0 Scale</option>
+                                <option value="5.0" {% if settings.gpa_scale == '5.0' %}selected{% endif %}>5.0 Scale</option>
+                                <option value="10.0" {% if settings.gpa_scale == '10.0' %}selected{% endif %}>10.0 Scale</option>
+                                <option value="100" {% if settings.gpa_scale == '100' %}selected{% endif %}>100 Point Scale</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="defaultTaskCategory" class="form-label">Default Task Category</label>
-                            <select class="form-select" id="defaultTaskCategory">
-                                <option value="general" selected>General</option>
-                                <option value="assignment">Assignment</option>
-                                <option value="exam">Exam</option>
-                                <option value="project">Project</option>
-                                <option value="reading">Reading</option>
+                            <select class="form-select" id="defaultTaskCategory" name="defaultTaskCategory">
+                                <option value="general" {% if settings.default_task_category == 'general' %}selected{% endif %}>General</option>
+                                <option value="assignment" {% if settings.default_task_category == 'assignment' %}selected{% endif %}>Assignment</option>
+                                <option value="exam" {% if settings.default_task_category == 'exam' %}selected{% endif %}>Exam</option>
+                                <option value="project" {% if settings.default_task_category == 'project' %}selected{% endif %}>Project</option>
+                                <option value="reading" {% if settings.default_task_category == 'reading' %}selected{% endif %}>Reading</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="weekStart" class="form-label">Week Starts On</label>
-                            <select class="form-select" id="weekStart">
-                                <option value="sunday" selected>Sunday</option>
-                                <option value="monday">Monday</option>
+                            <select class="form-select" id="weekStart" name="weekStart">
+                                <option value="sunday" {% if settings.week_start == 'sunday' %}selected{% endif %}>Sunday</option>
+                                <option value="monday" {% if settings.week_start == 'monday' %}selected{% endif %}>Monday</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="showGpa" checked>
+                                <input class="form-check-input" type="checkbox" id="showGpa" name="showGpa" {% if settings.show_gpa %}checked{% endif %}>
                                 <label class="form-check-label" for="showGpa">
                                     Show GPA Tracking (Future Feature)
                                 </label>
