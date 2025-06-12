@@ -106,3 +106,42 @@ class CalendarEvent:
     type: str = "event"  # event, class, assignment, personal
     reminder_minutes: int = 15
     created_at: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class ProjectMember:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str = ""
+    email: str = ""
+    name: str = ""
+    role: str = "member"  # owner, admin, member, viewer
+    joined_at: datetime = field(default_factory=datetime.now)
+    status: str = "active"  # active, inactive, pending
+
+@dataclass
+class ProjectInvitation:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str = ""
+    email: str = ""
+    invited_by: str = ""
+    role: str = "member"
+    message: str = ""
+    status: str = "pending"  # pending, accepted, declined, expired
+    created_at: datetime = field(default_factory=datetime.now)
+    expires_at: Optional[datetime] = None
+
+@dataclass
+class TaskComment:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    task_id: str = ""
+    author_email: str = ""
+    content: str = ""
+    created_at: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class ProjectActivity:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str = ""
+    user_email: str = ""
+    action: str = ""  # created_task, completed_task, added_member, etc.
+    description: str = ""
+    created_at: datetime = field(default_factory=datetime.now)

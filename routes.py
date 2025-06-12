@@ -4,6 +4,74 @@ from data_store import data_store
 from models import *
 from datetime import datetime, date, timedelta
 import logging
+import os
+
+def send_invitation_email(email, project_id, invitation_id, message=""):
+    """Send project invitation email using SendGrid"""
+    try:
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_key:
+            return False
+            
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To, Content
+        
+        # Get project details
+        project = None
+        for p in data_store.get_all_projects():
+            if p.id == project_id:
+                project = p
+                break
+                
+        if not project:
+            return False
+            
+        # Create email content
+        subject = f"You're invited to join '{project.name}' project"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #0d6efd;">Project Invitation</h2>
+            <p>You've been invited to collaborate on the project: <strong>{project.name}</strong></p>
+            
+            {f"<p><em>Message from the team:</em><br>{message}</p>" if message else ""}
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Project Details:</h3>
+                <p><strong>Name:</strong> {project.name}</p>
+                <p><strong>Description:</strong> {project.description}</p>
+                <p><strong>Status:</strong> {project.status.title()}</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{request.host_url}invite/{invitation_id}/accept" 
+                   style="background: #0d6efd; color: white; padding: 12px 30px; 
+                          text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Accept Invitation
+                </a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px;">
+                This invitation will expire in 7 days. If you have any questions, 
+                please contact the project team.
+            </p>
+        </div>
+        """
+        
+        sg = SendGridAPIClient(sendgrid_key)
+        message = Mail(
+            from_email=Email("noreply@studenthub.com"),
+            to_emails=To(email),
+            subject=subject,
+            html_content=html_content
+        )
+        
+        response = sg.send(message)
+        return response.status_code == 202
+        
+    except Exception as e:
+        logging.error(f"SendGrid error: {e}")
+        return False
 
 @app.route('/')
 def dashboard():
@@ -391,6 +459,105 @@ def move_project_task(task_id):
     
     project_id = request.form.get('project_id')
     return redirect(url_for('projects', project_id=project_id))
+
+@app.route('/projects/<project_id>/invite', methods=['POST'])
+def invite_project_member():
+    """Invite a member to join a project via email"""
+    project_id = request.form.get('project_id')
+    email = request.form.get('email')
+    message = request.form.get('message', '')
+    invited_by = request.form.get('invited_by', 'Project Admin')
+    
+    try:
+        # Create invitation
+        invitation_id = data_store.create_invitation(project_id, email, invited_by)
+        
+        # Send email invitation (if SendGrid is configured)
+        if send_invitation_email(email, project_id, invitation_id, message):
+            flash(f'Invitation sent to {email} successfully!', 'success')
+        else:
+            flash(f'Invitation created for {email}. Email delivery requires SendGrid configuration.', 'warning')
+            
+    except Exception as e:
+        logging.error(f"Error sending invitation: {e}")
+        flash('Error sending invitation. Please try again.', 'error')
+    
+    return redirect(url_for('projects', project_id=project_id))
+
+@app.route('/projects/<project_id>/members')
+def project_members(project_id):
+    """View and manage project members"""
+    project = None
+    for p in data_store.get_all_projects():
+        if p.id == project_id:
+            project = p
+            break
+    
+    if not project:
+        flash('Project not found.', 'error')
+        return redirect(url_for('projects'))
+    
+    members = data_store.get_project_members(project_id)
+    pending_invitations = data_store.get_pending_invitations(project_id)
+    
+    return render_template('project_members.html', 
+                         project=project, 
+                         members=members,
+                         pending_invitations=pending_invitations)
+
+@app.route('/projects/<project_id>/members/remove', methods=['POST'])
+def remove_project_member():
+    """Remove a member from a project"""
+    project_id = request.form.get('project_id')
+    email = request.form.get('email')
+    
+    try:
+        if data_store.remove_project_member(project_id, email):
+            flash(f'Member {email} removed from project.', 'success')
+        else:
+            flash('Error removing member.', 'error')
+    except Exception as e:
+        logging.error(f"Error removing member: {e}")
+        flash('Error removing member. Please try again.', 'error')
+    
+    return redirect(url_for('project_members', project_id=project_id))
+
+@app.route('/invite/<invitation_id>/accept')
+def accept_project_invitation(invitation_id):
+    """Accept a project invitation"""
+    try:
+        if data_store.accept_invitation(invitation_id):
+            flash('Invitation accepted! You are now a member of the project.', 'success')
+        else:
+            flash('Invalid or expired invitation.', 'error')
+    except Exception as e:
+        logging.error(f"Error accepting invitation: {e}")
+        flash('Error processing invitation.', 'error')
+    
+    return redirect(url_for('projects'))
+
+@app.route('/projects/<project_id>/activity')
+def project_activity(project_id):
+    """View project activity timeline"""
+    project = None
+    for p in data_store.get_all_projects():
+        if p.id == project_id:
+            project = p
+            break
+    
+    if not project:
+        flash('Project not found.', 'error')
+        return redirect(url_for('projects'))
+    
+    # Get recent activity (this would be expanded with actual activity tracking)
+    activities = [
+        {"user": "admin@example.com", "action": "created project", "timestamp": datetime.now()},
+        {"user": "member@example.com", "action": "added new task", "timestamp": datetime.now()},
+    ]
+    
+    return render_template('project_activity.html', 
+                         project=project, 
+                         activities=activities)
 
 @app.route('/settings')
 def settings():

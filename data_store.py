@@ -14,6 +14,8 @@ class InMemoryDataStore:
         self.projects: Dict[str, Project] = {}
         self.project_tasks: Dict[str, ProjectTask] = {}
         self.calendar_events: Dict[str, CalendarEvent] = {}
+        self.project_members: Dict[str, List[str]] = {}  # project_id -> list of email addresses
+        self.pending_invitations: Dict[str, Dict] = {}  # invitation_id -> invitation details
         
         # Initialize with some motivational quotes
         self.quotes = [
@@ -24,6 +26,9 @@ class InMemoryDataStore:
             "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you. - Jeremiah 29:11",
             "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go. - Joshua 1:9"
         ]
+        
+        # Add sample devotion entries
+        self._initialize_sample_data()
     
     # Task methods
     def add_task(self, task: Task) -> str:
@@ -231,6 +236,101 @@ class InMemoryDataStore:
             "total_courses": len(self.courses),
             "total_projects": len(self.projects)
         }
+    
+    def _initialize_sample_data(self):
+        """Initialize sample data for testing and demonstration"""
+        # Add sample devotion entries
+        from datetime import timedelta
+        
+        sample_devotions = [
+            {
+                "title": "Morning Prayer",
+                "scripture": "Psalm 23:1-6",
+                "notes": "The Lord is my shepherd, I lack nothing. This psalm reminds me of God's constant care and provision, especially during stressful exam periods.",
+                "reflection": "As a student, I often worry about my future and academic performance. This passage reminds me that God is guiding my path and providing for my needs. I need to trust Him more with my studies.",
+                "date": date.today() - timedelta(days=1),
+                "duration_minutes": 20
+            },
+            {
+                "title": "Evening Devotion",
+                "scripture": "Philippians 4:6-7",
+                "notes": "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.",
+                "reflection": "This verse speaks directly to my anxiety about upcoming exams. Instead of worrying, I should pray and trust God with my concerns. His peace will guard my heart and mind.",
+                "date": date.today() - timedelta(days=2),
+                "duration_minutes": 15
+            },
+            {
+                "title": "Study Break Reflection",
+                "scripture": "Proverbs 3:5-6",
+                "notes": "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+                "reflection": "Sometimes I rely too much on my own abilities and forget to seek God's wisdom in my studies. This passage reminds me to acknowledge God in all my academic pursuits.",
+                "date": date.today() - timedelta(days=3),
+                "duration_minutes": 10
+            }
+        ]
+        
+        for devotion_data in sample_devotions:
+            devotion = DevotionEntry(
+                title=devotion_data["title"],
+                scripture=devotion_data["scripture"],
+                notes=devotion_data["notes"],
+                reflection=devotion_data["reflection"],
+                date=devotion_data["date"],
+                duration_minutes=devotion_data["duration_minutes"]
+            )
+            self.add_devotion_entry(devotion)
+    
+    # Project collaboration methods
+    def add_project_member(self, project_id: str, email: str) -> bool:
+        """Add a member to a project"""
+        if project_id not in self.project_members:
+            self.project_members[project_id] = []
+        if email not in self.project_members[project_id]:
+            self.project_members[project_id].append(email)
+            return True
+        return False
+    
+    def get_project_members(self, project_id: str) -> List[str]:
+        """Get all members of a project"""
+        return self.project_members.get(project_id, [])
+    
+    def remove_project_member(self, project_id: str, email: str) -> bool:
+        """Remove a member from a project"""
+        if project_id in self.project_members and email in self.project_members[project_id]:
+            self.project_members[project_id].remove(email)
+            return True
+        return False
+    
+    def create_invitation(self, project_id: str, email: str, invited_by: str) -> str:
+        """Create a project invitation"""
+        import uuid
+        invitation_id = str(uuid.uuid4())
+        self.pending_invitations[invitation_id] = {
+            "project_id": project_id,
+            "email": email,
+            "invited_by": invited_by,
+            "created_at": datetime.now(),
+            "status": "pending"
+        }
+        return invitation_id
+    
+    def get_pending_invitations(self, project_id: str = None) -> List[Dict]:
+        """Get pending invitations for a project or all projects"""
+        invitations = []
+        for inv_id, inv_data in self.pending_invitations.items():
+            if project_id is None or inv_data["project_id"] == project_id:
+                if inv_data["status"] == "pending":
+                    invitations.append({**inv_data, "id": inv_id})
+        return invitations
+    
+    def accept_invitation(self, invitation_id: str) -> bool:
+        """Accept a project invitation"""
+        if invitation_id in self.pending_invitations:
+            invitation = self.pending_invitations[invitation_id]
+            self.add_project_member(invitation["project_id"], invitation["email"])
+            self.pending_invitations[invitation_id]["status"] = "accepted"
+            return True
+        return False
 
 # Global data store instance
 data_store = InMemoryDataStore()
