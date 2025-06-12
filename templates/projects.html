@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - Student Hub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-project-diagram"></i> Project Management</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                    <i class="fas fa-plus"></i> Add Project
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Selection -->
+    {% if projects %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Select Project to View Kanban Board</h5>
+                                <small class="text-muted">Choose a project to manage its tasks</small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    {% if selected_project %}{{ selected_project.name }}{% else %}Choose Project{% endif %}
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% for project in projects %}
+                                        <li><a class="dropdown-item" href="{{ url_for('projects', project_id=project.id) }}">{{ project.name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Kanban Board -->
+    {% if selected_project %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">{{ selected_project.name }} - Kanban Board</h5>
+                            <small class="text-muted">{{ selected_project.description }}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-{{ 'success' if selected_project.status == 'completed' else 'warning' if selected_project.status == 'on_hold' else 'primary' }}">
+                                {{ selected_project.status.replace('_', ' ').title() }}
+                            </span>
+                            {% if selected_project.due_date %}
+                                <span class="badge bg-info ms-2">Due: {{ selected_project.due_date.strftime('%m/%d/%Y') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Add Task Button -->
+                        <div class="mb-3">
+                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                                <i class="fas fa-plus"></i> Add Task
+                            </button>
+                        </div>
+
+                        <!-- Kanban Columns -->
+                        <div class="row">
+                            <!-- To Do Column -->
+                            <div class="col-md-4">
+                                <div class="card bg-secondary bg-opacity-25">
+                                    <div class="card-header text-center">
+                                        <h6 class="mb-0"><i class="fas fa-list"></i> To Do ({{ project_tasks.todo|length }})</h6>
+                                    </div>
+                                    <div class="card-body kanban-column" style="min-height: 400px;">
+                                        {% for task in project_tasks.todo %}
+                                            <div class="card mb-3 kanban-task">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title">{{ task.title }}</h6>
+                                                    {% if task.description %}
+                                                        <p class="card-text small text-muted">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
+                                                    {% endif %}
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="badge bg-{{ 'danger' if task.priority == 'urgent' else 'warning' if task.priority == 'high' else 'primary' }}">
+                                                            {{ task.priority.title() }}
+                                                        </span>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <form method="POST" action="{{ url_for('move_project_task', task_id=task.id) }}" style="display: inline;">
+                                                                <input type="hidden" name="status" value="in_progress">
+                                                                <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+                                                                <button type="submit" class="btn btn-outline-primary btn-sm" title="Move to In Progress">
+                                                                    <i class="fas fa-arrow-right"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- In Progress Column -->
+                            <div class="col-md-4">
+                                <div class="card bg-warning bg-opacity-25">
+                                    <div class="card-header text-center">
+                                        <h6 class="mb-0"><i class="fas fa-spinner"></i> In Progress ({{ project_tasks.in_progress|length }})</h6>
+                                    </div>
+                                    <div class="card-body kanban-column" style="min-height: 400px;">
+                                        {% for task in project_tasks.in_progress %}
+                                            <div class="card mb-3 kanban-task">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title">{{ task.title }}</h6>
+                                                    {% if task.description %}
+                                                        <p class="card-text small text-muted">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
+                                                    {% endif %}
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="badge bg-{{ 'danger' if task.priority == 'urgent' else 'warning' if task.priority == 'high' else 'primary' }}">
+                                                            {{ task.priority.title() }}
+                                                        </span>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <form method="POST" action="{{ url_for('move_project_task', task_id=task.id) }}" style="display: inline;">
+                                                                <input type="hidden" name="status" value="todo">
+                                                                <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+                                                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Move to To Do">
+                                                                    <i class="fas fa-arrow-left"></i>
+                                                                </button>
+                                                            </form>
+                                                            <form method="POST" action="{{ url_for('move_project_task', task_id=task.id) }}" style="display: inline;">
+                                                                <input type="hidden" name="status" value="done">
+                                                                <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+                                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Move to Done">
+                                                                    <i class="fas fa-arrow-right"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Done Column -->
+                            <div class="col-md-4">
+                                <div class="card bg-success bg-opacity-25">
+                                    <div class="card-header text-center">
+                                        <h6 class="mb-0"><i class="fas fa-check"></i> Done ({{ project_tasks.done|length }})</h6>
+                                    </div>
+                                    <div class="card-body kanban-column" style="min-height: 400px;">
+                                        {% for task in project_tasks.done %}
+                                            <div class="card mb-3 kanban-task">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title text-decoration-line-through">{{ task.title }}</h6>
+                                                    {% if task.description %}
+                                                        <p class="card-text small text-muted">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
+                                                    {% endif %}
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="badge bg-success">Completed</span>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <form method="POST" action="{{ url_for('move_project_task', task_id=task.id) }}" style="display: inline;">
+                                                                <input type="hidden" name="status" value="in_progress">
+                                                                <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+                                                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Move to In Progress">
+                                                                    <i class="fas fa-arrow-left"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Projects Overview -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> All Projects</h5>
+                </div>
+                <div class="card-body">
+                    {% if projects %}
+                        <div class="row">
+                            {% for project in projects %}
+                                <div class="col-lg-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-0">{{ project.name }}</h6>
+                                                <small class="text-muted">{{ project.description[:50] }}{% if project.description|length > 50 %}...{% endif %}</small>
+                                            </div>
+                                            <span class="badge bg-{{ 'success' if project.status == 'completed' else 'warning' if project.status == 'on_hold' else 'primary' }}">
+                                                {{ project.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <small class="text-muted">Progress</small>
+                                                    <h6>{{ project.progress }}%</h6>
+                                                </div>
+                                                <div class="col-4">
+                                                    {% set total_tasks = (project.id | string in project_tasks and (project_tasks[project.id] | length)) or 0 %}
+                                                    <small class="text-muted">Tasks</small>
+                                                    <h6>{{ total_tasks }}</h6>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Due Date</small>
+                                                    <h6>{{ project.due_date.strftime('%m/%d') if project.due_date else 'None' }}</h6>
+                                                </div>
+                                            </div>
+                                            <div class="progress mt-2" style="height: 8px;">
+                                                <div class="progress-bar" style="width: {{ project.progress }}%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="d-flex justify-content-between">
+                                                <small class="text-muted">Created {{ project.created_at.strftime('%m/%d/%Y') }}</small>
+                                                <a href="{{ url_for('projects', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    View Board
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-project-diagram fa-4x text-muted mb-3"></i>
+                            <h5>No projects yet</h5>
+                            <p class="text-muted">Create your first project to start organizing tasks with Kanban boards.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                                <i class="fas fa-plus"></i> Create Your First Project
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Project Modal -->
+<div class="modal fade" id="addProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Add New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_project') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="planning" selected>Planning</option>
+                                <option value="active">Active</option>
+                                <option value="on_hold">On Hold</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+{% if selected_project %}
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Add Task to {{ selected_project.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_project_task', project_id=selected_project.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="task_title" class="form-label">Task Title *</label>
+                        <input type="text" class="form-control" id="task_title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="task_description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task_priority" class="form-label">Priority</label>
+                        <select class="form-select" id="task_priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<style>
+.kanban-task {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.kanban-task:hover {
+    transform: translateY(-2px);
+}
+
+.kanban-column {
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

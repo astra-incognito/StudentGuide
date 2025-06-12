@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Student Hub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h1 class="display-6 mb-3">Welcome to Your Student Hub</h1>
+                    <blockquote class="blockquote">
+                        <p class="mb-0">"{{ quote }}"</p>
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-tasks fa-2x text-primary mb-2"></i>
+                    <h5 class="card-title">{{ stats.pending_tasks }}</h5>
+                    <p class="card-text">Pending Tasks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <h5 class="card-title">{{ stats.overdue_tasks }}</h5>
+                    <p class="card-text">Overdue Tasks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-fire fa-2x text-danger mb-2"></i>
+                    <h5 class="card-title">{{ stats.active_streaks }}</h5>
+                    <p class="card-text">Active Streaks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-bullseye fa-2x text-success mb-2"></i>
+                    <h5 class="card-title">{{ stats.avg_goal_progress }}%</h5>
+                    <p class="card-text">Avg Goal Progress</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Widgets -->
+    <div class="row">
+        <!-- Recent Tasks -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-tasks"></i> Recent Tasks</h5>
+                    <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_tasks %}
+                        <div class="list-group list-group-flush">
+                            {% for task in recent_tasks %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ task.title }}</h6>
+                                        <small class="text-muted">
+                                            {% if task.due_date %}
+                                                Due: {{ task.due_date.strftime('%m/%d/%Y') }}
+                                            {% else %}
+                                                No due date
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-{{ 'danger' if task.priority == 'urgent' else 'warning' if task.priority == 'high' else 'primary' }}">
+                                        {{ task.priority.title() }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                            <p>No pending tasks. Great job!</p>
+                            <a href="{{ url_for('tasks') }}" class="btn btn-primary">Add Your First Task</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Habit Tracker -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Habit Tracker</h5>
+                    <a href="{{ url_for('habits') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if active_habits %}
+                        <div class="list-group list-group-flush">
+                            {% for habit in active_habits %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ habit.name }}</h6>
+                                        <small class="text-muted">
+                                            Current streak: {{ habit.streak }} days
+                                            {% if habit.last_completed == today %}
+                                                <i class="fas fa-check text-success"></i>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% if habit.last_completed != today %}
+                                        <form method="POST" action="{{ url_for('complete_habit', habit_id=habit.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="badge bg-success">Done Today</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-seedling fa-3x mb-3"></i>
+                            <p>No habits yet. Start building good habits!</p>
+                            <a href="{{ url_for('habits') }}" class="btn btn-primary">Add Your First Habit</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar"></i> Upcoming Events</h5>
+                    <a href="{{ url_for('calendar') }}" class="btn btn-sm btn-outline-primary">View Calendar</a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                        <div class="list-group list-group-flush">
+                            {% for event in upcoming_events %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ event.title }}</h6>
+                                        <small>{{ event.start_date.strftime('%m/%d') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ event.start_time }} - {{ event.end_time }}</p>
+                                    {% if event.description %}
+                                        <small class="text-muted">{{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}</small>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-calendar-plus fa-3x mb-3"></i>
+                            <p>No upcoming events scheduled.</p>
+                            <a href="{{ url_for('calendar') }}" class="btn btn-primary">Schedule an Event</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a href="{{ url_for('tasks') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus"></i><br>Add Task
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('calendar') }}" class="btn btn-success w-100">
+                                <i class="fas fa-calendar-plus"></i><br>Schedule Event
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('devotion') }}" class="btn btn-info w-100">
+                                <i class="fas fa-book-open"></i><br>Log Devotion
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('finances') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-dollar-sign"></i><br>Track Expense
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

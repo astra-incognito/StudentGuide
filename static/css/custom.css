@@ -1,0 +1,426 @@
+/* Custom CSS for Student Productivity Hub */
+
+/* Root variables for consistent theming */
+:root {
+    --custom-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --custom-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --custom-border-radius: 0.375rem;
+    --custom-transition: all 0.15s ease-in-out;
+}
+
+/* Enhanced card styling */
+.card {
+    border: none;
+    box-shadow: var(--custom-shadow);
+    transition: var(--custom-transition);
+}
+
+.card:hover {
+    box-shadow: var(--custom-shadow-lg);
+    transform: translateY(-2px);
+}
+
+/* Custom scrollbars for dark theme */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bs-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-light);
+}
+
+/* Enhanced navigation */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: var(--custom-transition);
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: var(--custom-border-radius);
+}
+
+/* Dashboard specific styles */
+.dashboard-stat-card {
+    background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
+    color: white;
+    border-radius: var(--custom-border-radius);
+}
+
+/* Task priority indicators */
+.priority-urgent {
+    border-left: 4px solid var(--bs-danger);
+}
+
+.priority-high {
+    border-left: 4px solid var(--bs-warning);
+}
+
+.priority-medium {
+    border-left: 4px solid var(--bs-info);
+}
+
+.priority-low {
+    border-left: 4px solid var(--bs-success);
+}
+
+/* Calendar grid styling */
+.calendar-grid {
+    background: var(--bs-dark);
+    border-radius: var(--custom-border-radius);
+    padding: 1rem;
+}
+
+.calendar-day {
+    min-height: 80px;
+    padding: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: var(--custom-transition);
+}
+
+.calendar-day:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.calendar-day.today {
+    background-color: rgba(13, 110, 253, 0.2);
+    border-color: var(--bs-primary);
+}
+
+/* Habit tracking styles */
+.habit-streak {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--bs-danger);
+}
+
+.habit-calendar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-top: 0.5rem;
+}
+
+.habit-day {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    background-color: var(--bs-secondary);
+    opacity: 0.3;
+    transition: var(--custom-transition);
+}
+
+.habit-day.completed {
+    background-color: var(--bs-success);
+    opacity: 1;
+}
+
+.habit-day:hover {
+    transform: scale(1.2);
+}
+
+/* Goal progress styling */
+.goal-progress {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--bs-secondary);
+}
+
+.goal-progress .progress-bar {
+    border-radius: 6px;
+    transition: width 0.6s ease;
+}
+
+/* Financial tracker */
+.finance-income {
+    color: var(--bs-success);
+    font-weight: 600;
+}
+
+.finance-expense {
+    color: var(--bs-danger);
+    font-weight: 600;
+}
+
+.finance-balance-positive {
+    background: linear-gradient(135deg, var(--bs-success), var(--bs-info));
+}
+
+.finance-balance-negative {
+    background: linear-gradient(135deg, var(--bs-danger), var(--bs-warning));
+}
+
+/* Project Kanban board */
+.kanban-column {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--custom-border-radius);
+    min-height: 400px;
+    padding: 1rem;
+}
+
+.kanban-task {
+    cursor: grab;
+    transition: var(--custom-transition);
+    border: none;
+    background: var(--bs-dark);
+}
+
+.kanban-task:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--custom-shadow-lg);
+}
+
+.kanban-task:active {
+    cursor: grabbing;
+}
+
+/* Devotion journal styling */
+.devotion-entry {
+    border-left: 4px solid var(--bs-info);
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.scripture-quote {
+    font-style: italic;
+    border-left: 3px solid var(--bs-secondary);
+    padding-left: 1rem;
+    margin: 1rem 0;
+}
+
+/* Loading states */
+.loading-skeleton {
+    background: linear-gradient(90deg, var(--bs-secondary) 25%, var(--bs-light) 50%, var(--bs-secondary) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Form enhancements */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+    border-radius: var(--custom-border-radius);
+    font-weight: 500;
+    transition: var(--custom-transition);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Modal enhancements */
+.modal-content {
+    border: none;
+    border-radius: var(--custom-border-radius);
+    box-shadow: var(--custom-shadow-lg);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Alert enhancements */
+.alert {
+    border: none;
+    border-radius: var(--custom-border-radius);
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--bs-success);
+}
+
+.alert-danger {
+    border-left-color: var(--bs-danger);
+}
+
+.alert-warning {
+    border-left-color: var(--bs-warning);
+}
+
+.alert-info {
+    border-left-color: var(--bs-info);
+}
+
+/* Badge enhancements */
+.badge {
+    font-weight: 500;
+    border-radius: 0.375rem;
+}
+
+/* Table enhancements */
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Progress bar enhancements */
+.progress {
+    border-radius: var(--custom-border-radius);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar {
+    border-radius: var(--custom-border-radius);
+}
+
+/* Dropdown enhancements */
+.dropdown-menu {
+    border: none;
+    box-shadow: var(--custom-shadow-lg);
+    border-radius: var(--custom-border-radius);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bs-primary);
+}
+
+/* List group enhancements */
+.list-group-item {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: transparent;
+}
+
+.list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Footer styling */
+footer {
+    margin-top: auto;
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .kanban-column {
+        margin-bottom: 1rem;
+    }
+    
+    .habit-calendar {
+        justify-content: center;
+    }
+    
+    .table-responsive {
+        border-radius: var(--custom-border-radius);
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .modal,
+    .alert {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+}
+
+/* Accessibility enhancements */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus indicators */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid;
+    }
+    
+    .btn {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Custom utility classes */
+.text-gradient {
+    background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.border-gradient {
+    border: 2px solid;
+    border-image: linear-gradient(135deg, var(--bs-primary), var(--bs-info)) 1;
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}

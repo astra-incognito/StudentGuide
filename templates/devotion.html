@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Devotion - Student Hub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-pray"></i> Bible Study & Devotion</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDevotionModal">
+                    <i class="fas fa-plus"></i> Add Entry
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devotion Stats -->
+    {% if entries %}
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-book-open fa-2x text-primary mb-2"></i>
+                        <h4>{{ entries|length }}</h4>
+                        <p class="mb-0">Total Entries</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                        <h4>{{ entries|sum(attribute='duration_minutes') }}</h4>
+                        <p class="mb-0">Total Minutes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-calendar-check fa-2x text-success mb-2"></i>
+                        <h4>{{ entries|selectattr('date', 'equalto', today())|list|length }}</h4>
+                        <p class="mb-0">Today's Entries</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-heart fa-2x text-danger mb-2"></i>
+                        <h4>{{ (entries|sum(attribute='duration_minutes') / entries|length)|round|int if entries else 0 }}</h4>
+                        <p class="mb-0">Avg Minutes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Spiritual Growth Tips -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Spiritual Growth for Students</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-book"></i> Daily Bible Reading Tips</h6>
+                                <ul class="mb-0">
+                                    <li>Start with just 10-15 minutes daily</li>
+                                    <li>Choose a consistent time (morning or evening)</li>
+                                    <li>Use a study Bible with explanatory notes</li>
+                                    <li>Join a student Bible study group</li>
+                                    <li>Apply what you read to your daily life</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-praying-hands"></i> Prayer & Reflection</h6>
+                                <ul class="mb-0">
+                                    <li>Pray for wisdom in your studies</li>
+                                    <li>Ask for strength during exams</li>
+                                    <li>Seek guidance for future decisions</li>
+                                    <li>Thank God for daily blessings</li>
+                                    <li>Pray for your classmates and teachers</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devotion Entries -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-journal-whills"></i> Devotion Journal</h5>
+                </div>
+                <div class="card-body">
+                    {% if entries %}
+                        <div class="row">
+                            {% for entry in entries %}
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-0">{{ entry.title or 'Devotion Entry' }}</h6>
+                                                <small class="text-muted">{{ entry.date.strftime('%B %d, %Y') }}</small>
+                                            </div>
+                                            {% if entry.duration_minutes > 0 %}
+                                                <span class="badge bg-info">{{ entry.duration_minutes }} min</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-body">
+                                            {% if entry.scripture %}
+                                                <div class="mb-3">
+                                                    <h6><i class="fas fa-bible"></i> Scripture</h6>
+                                                    <blockquote class="blockquote-footer mb-2">
+                                                        <cite>{{ entry.scripture }}</cite>
+                                                    </blockquote>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if entry.notes %}
+                                                <div class="mb-3">
+                                                    <h6><i class="fas fa-sticky-note"></i> Notes</h6>
+                                                    <p class="text-muted">{{ entry.notes[:200] }}{% if entry.notes|length > 200 %}...{% endif %}</p>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if entry.reflection %}
+                                                <div class="mb-3">
+                                                    <h6><i class="fas fa-heart"></i> Reflection</h6>
+                                                    <p class="text-muted">{{ entry.reflection[:200] }}{% if entry.reflection|length > 200 %}...{% endif %}</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-footer text-muted">
+                                            <small>Added {{ entry.created_at.strftime('%m/%d/%Y at %I:%M %p') }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-bible fa-4x text-muted mb-3"></i>
+                            <h5>No devotion entries yet</h5>
+                            <p class="text-muted">Start your spiritual journey by recording your daily Bible study and reflections.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDevotionModal">
+                                <i class="fas fa-plus"></i> Add Your First Entry
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bible Verses for Students -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-quote-right"></i> Encouraging Verses for Students</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="border-start border-primary border-3 ps-3">
+                                <p class="mb-1">"Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight."</p>
+                                <cite class="text-muted">Proverbs 3:5-6</cite>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="border-start border-success border-3 ps-3">
+                                <p class="mb-1">"For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, plans to give you hope and a future."</p>
+                                <cite class="text-muted">Jeremiah 29:11</cite>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="border-start border-info border-3 ps-3">
+                                <p class="mb-1">"She is clothed with strength and dignity; she can laugh at the days to come. She speaks with wisdom, and faithful instruction is on her tongue."</p>
+                                <cite class="text-muted">Proverbs 31:25-26</cite>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="border-start border-warning border-3 ps-3">
+                                <p class="mb-1">"Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go."</p>
+                                <cite class="text-muted">Joshua 1:9</cite>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Devotion Entry Modal -->
+<div class="modal fade" id="addDevotionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Add Devotion Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_devotion_entry') }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="title" class="form-label">Entry Title</label>
+                            <input type="text" class="form-control" id="title" name="title" placeholder="e.g., Morning Devotion, Prayer Time">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ today().isoformat() }}">
+                        </div>
+                        <div class="col-12">
+                            <label for="scripture" class="form-label">Scripture Reference</label>
+                            <input type="text" class="form-control" id="scripture" name="scripture" placeholder="e.g., Psalm 23, John 3:16, Romans 8:28">
+                        </div>
+                        <div class="col-12">
+                            <label for="notes" class="form-label">Study Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="What did you learn? Key insights or observations..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="reflection" class="form-label">Personal Reflection</label>
+                            <textarea class="form-control" id="reflection" name="reflection" rows="4" placeholder="How does this apply to your life? What is God teaching you?"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="duration_minutes" class="form-label">Duration (minutes)</label>
+                            <input type="number" class="form-control" id="duration_minutes" name="duration_minutes" min="0" value="15">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
