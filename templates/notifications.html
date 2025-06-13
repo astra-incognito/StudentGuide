@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Notifications - Student Hub{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-bell"></i> Notifications</h4>
+                    <form method="post" action="{{ url_for('create_demo_notification') }}">
+                        <button class="btn btn-outline-primary btn-sm" type="submit">Create Demo Notification</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    {% if notifications %}
+                        <ul class="list-group">
+                            {% for notif in notifications %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center {% if not notif.is_read %}list-group-item-info{% endif %}">
+                                    <div>
+                                        <span class="badge bg-{{ 'info' if notif.type == 'info' else 'success' if notif.type == 'success' else 'danger' }} me-2">{{ notif.type.title() }}</span>
+                                        {{ notif.message }}
+                                        <small class="text-muted ms-2">{{ notif.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    {% if not notif.is_read %}
+                                    <form method="post" action="{{ url_for('mark_notification_read', notification_id=notif.id) }}">
+                                        <button class="btn btn-sm btn-outline-success">Mark as Read</button>
+                                    </form>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Read</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-bell fa-3x mb-3"></i>
+                            <h5>No notifications yet</h5>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

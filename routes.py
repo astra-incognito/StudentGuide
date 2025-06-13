@@ -539,29 +539,23 @@ def project_activity(project_id):
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-    """Application settings and preferences"""
-    # Settings model: id, student_name, university, major, grad_year, notification_prefs, theme, accent_color, compact_mode, animations, gpa_scale, default_task_category, week_start, show_gpa
     from models import Settings
     user_id = 1  # For demo, use a static user id. Replace with real user id in production.
     settings = Settings.query.get(user_id)
     if request.method == 'POST':
-        # General
         settings.student_name = request.form.get('studentName')
         settings.university = request.form.get('university')
         settings.major = request.form.get('major')
         settings.grad_year = request.form.get('gradYear')
-        # Notifications
         settings.task_reminders = 'taskReminders' in request.form
         settings.habit_reminders = 'habitReminders' in request.form
         settings.devotion_reminders = 'devotionReminders' in request.form
         settings.calendar_notifications = 'calendarNotifications' in request.form
         settings.reminder_time = request.form.get('reminderTime')
-        # Theme
         settings.theme = request.form.get('theme')
         settings.accent_color = request.form.get('accentColor')
         settings.compact_mode = 'compactMode' in request.form
         settings.animations = 'animations' in request.form
-        # Academic
         settings.gpa_scale = request.form.get('gpaScale')
         settings.default_task_category = request.form.get('defaultTaskCategory')
         settings.week_start = request.form.get('weekStart')
@@ -624,6 +618,33 @@ def api_finances_chart_data():
     }
     return jsonify(chart_data)
 
+@app.route('/notifications')
+def notifications():
+    # For demo, use static user_id '1'. Replace with session user in production.
+    user_id = '1'
+    notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+    return render_template('notifications.html', notifications=notifications)
+
+@app.route('/notifications/mark_read/<notification_id>', methods=['POST'])
+def mark_notification_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    notification.is_read = True
+    db.session.commit()
+    return ('', 204)
+
+@app.route('/notifications/create_demo', methods=['POST'])
+def create_demo_notification():
+    user_id = '1'
+    notif = Notification(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        message='This is a demo notification!',
+        type='info'
+    )
+    db.session.add(notif)
+    db.session.commit()
+    return ('', 204)
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
@@ -647,3 +668,79 @@ def edit_task(task_id):
     db.session.commit()
     flash('Task updated successfully!', 'success')
     return redirect(url_for('tasks'))
+
+from models import StudyGroup, StudyGroupMember
+
+@app.route('/groups')
+def groups():
+    user_id = '1'  # Replace with session user in production
+    groups = StudyGroup.query.all()
+    my_groups = StudyGroupMember.query.filter_by(user_id=user_id).all()
+    return render_template('groups.html', groups=groups, my_groups=my_groups)
+
+@app.route('/groups/create', methods=['POST'])
+def create_group():
+    user_id = '1'
+    name = request.form.get('name')
+    description = request.form.get('description')
+    group = StudyGroup(id=str(uuid.uuid4()), name=name, description=description)
+    db.session.add(group)
+    db.session.commit()
+    member = StudyGroupMember(id=str(uuid.uuid4()), group_id=group.id, user_id=user_id)
+    db.session.add(member)
+    db.session.commit()
+    return redirect(url_for('groups'))
+
+@app.route('/groups/join/<group_id>', methods=['POST'])
+def join_group(group_id):
+    user_id = '1'
+    if not StudyGroupMember.query.filter_by(group_id=group_id, user_id=user_id).first():
+        member = StudyGroupMember(id=str(uuid.uuid4()), group_id=group_id, user_id=user_id)
+        db.session.add(member)
+        db.session.commit()
+    return redirect(url_for('groups'))
+
+@app.route('/groups/<group_id>')
+def group_detail(group_id):
+    group = StudyGroup.query.get_or_404(group_id)
+    members = StudyGroupMember.query.filter_by(group_id=group_id).all()
+    return render_template('group_detail.html', group=group, members=members)
+
+from models import PomodoroSession, UserPreference
+
+@app.route('/focus', methods=['GET', 'POST'])
+def focus():
+    user_id = '1'
+    if request.method == 'POST':
+        import uuid
+        from datetime import datetime
+        start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
+        end_time = datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M')
+        duration = int((end_time - start_time).total_seconds() // 60)
+        session = PomodoroSession(id=str(uuid.uuid4()), user_id=user_id, start_time=start_time, end_time=end_time, duration_minutes=duration, task_id=request.form.get('task_id'))
+        db.session.add(session)
+        db.session.commit()
+        flash('Focus session saved!', 'success')
+        return redirect(url_for('focus'))
+    sessions = PomodoroSession.query.filter_by(user_id=user_id).order_by(PomodoroSession.start_time.desc()).all()
+    tasks = Task.query.all()
+    return render_template('focus.html', sessions=sessions, tasks=tasks)
+
+@app.route('/preferences', methods=['GET', 'POST'])
+def preferences():
+    user_id = '1'
+    pref = UserPreference.query.filter_by(user_id=user_id).first()
+    if not pref:
+        import uuid
+        pref = UserPreference(id=str(uuid.uuid4()), user_id=user_id)
+        db.session.add(pref)
+        db.session.commit()
+    if request.method == 'POST':
+        pref.theme = request.form.get('theme')
+        pref.accent_color = request.form.get('accent_color')
+        pref.dark_mode = 'dark_mode' in request.form
+        pref.pwa_enabled = 'pwa_enabled' in request.form
+        db.session.commit()
+        flash('Preferences updated!', 'success')
+        return redirect(url_for('preferences'))
+    return render_template('preferences.html', pref=pref)

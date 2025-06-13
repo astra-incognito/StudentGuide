@@ -179,3 +179,86 @@ class Settings(db.Model):
     default_task_category = db.Column(db.String(32), default='general')
     week_start = db.Column(db.String(8), default='sunday')
     show_gpa = db.Column(db.Boolean, default=True)
+
+# --- New Features ---
+from datetime import datetime
+
+class Notification(db.Model):
+    __tablename__ = 'notification'
+    id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String, default='info')
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    scheduled_for = db.Column(db.DateTime)
+
+class StudyGroup(db.Model):
+    __tablename__ = 'study_group'
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class StudyGroupMember(db.Model):
+    __tablename__ = 'study_group_member'
+    id = db.Column(db.String, primary_key=True)
+    group_id = db.Column(db.String, db.ForeignKey('study_group.id'))
+    user_id = db.Column(db.String, nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class FileAttachment(db.Model):
+    __tablename__ = 'file_attachment'
+    id = db.Column(db.String, primary_key=True)
+    filename = db.Column(db.String, nullable=False)
+    url = db.Column(db.String, nullable=False)
+    uploaded_by = db.Column(db.String, nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    task_id = db.Column(db.String, db.ForeignKey('task.id'))
+    event_id = db.Column(db.String, db.ForeignKey('calendar_event.id'))
+    course_id = db.Column(db.String, db.ForeignKey('course.id'))
+
+class Note(db.Model):
+    __tablename__ = 'note'
+    id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    title = db.Column(db.String, nullable=False)
+    content = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    course_id = db.Column(db.String, db.ForeignKey('course.id'))
+    project_id = db.Column(db.String, db.ForeignKey('project.id'))
+
+class PomodoroSession(db.Model):
+    __tablename__ = 'pomodoro_session'
+    id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime)
+    duration_minutes = db.Column(db.Integer)
+    task_id = db.Column(db.String, db.ForeignKey('task.id'))
+
+class Badge(db.Model):
+    __tablename__ = 'badge'
+    id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False)
+    description = db.Column(db.Text)
+    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class CalendarSyncToken(db.Model):
+    __tablename__ = 'calendar_sync_token'
+    id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    provider = db.Column(db.String, nullable=False)
+    token = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserPreference(db.Model):
+    __tablename__ = 'user_preference'
+    id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    theme = db.Column(db.String, default='light')
+    accent_color = db.Column(db.String, default='#007bff')
+    dark_mode = db.Column(db.Boolean, default=False)
+    pwa_enabled = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
