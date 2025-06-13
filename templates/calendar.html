@@ -17,11 +17,15 @@
     </div>
 
     <!-- Calendar View -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-9">
+            <div class="card modern-calendar-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Monthly View - {{ today.strftime('%B %Y') }}</h5>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                        <button class="btn btn-outline-primary btn-sm" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <!-- Simple calendar grid -->
@@ -41,22 +45,22 @@
                         {% set current_year = today.year %}
                         {% set first_day = today.replace(day=1) %}
                         {% set days_in_month = (today.replace(month=current_month+1, day=1) - today.replace(day=1)).days if current_month < 12 else (today.replace(year=current_year+1, month=1, day=1) - today.replace(day=1)).days %}
-                        
                         {% for week in range(5) %}
                             <div class="row mb-2">
                                 {% for day in range(7) %}
                                     {% set day_num = week * 7 + day + 1 - first_day.weekday() %}
-                                    <div class="col border calendar-day" style="min-height: 80px;">
+                                    <div class="col border calendar-day position-relative" style="min-height: 80px; cursor:pointer;" data-day="{{ day_num }}">
                                         {% if day_num > 0 and day_num <= days_in_month %}
                                             <div class="fw-bold {% if day_num == today.day %}text-primary{% endif %}">{{ day_num }}</div>
                                             <!-- Show events for this day -->
                                             {% for event in events %}
                                                 {% if event.start_date.day == day_num %}
-                                                    <div class="small bg-primary text-white rounded p-1 mb-1">
+                                                    <div class="small bg-primary text-white rounded p-1 mb-1 event-badge" data-bs-toggle="tooltip" title="{{ event.title }}&#10;{{ event.start_time }}-{{ event.end_time }}&#10;{{ event.description }}">
                                                         {{ event.title[:20] }}{% if event.title|length > 20 %}...{% endif %}
                                                     </div>
                                                 {% endif %}
                                             {% endfor %}
+                                            <button class="btn btn-xs btn-outline-success add-quick-event-btn position-absolute bottom-0 end-0 m-1" data-day="{{ day_num }}" title="Quick Add Event"><i class="fas fa-plus"></i></button>
                                         {% endif %}
                                     </div>
                                 {% endfor %}
@@ -174,13 +178,74 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Animate calendar card
+const calendarCard = document.querySelector('.modern-calendar-card');
+if(calendarCard) {
+    calendarCard.style.opacity = 0;
+    setTimeout(() => { calendarCard.style.transition = 'opacity 0.7s'; calendarCard.style.opacity = 1; }, 100);
+}
+// Tooltip for events
+const eventBadges = document.querySelectorAll('.event-badge');
+eventBadges.forEach(badge => new bootstrap.Tooltip(badge));
+// Quick add event button
+const quickAddBtns = document.querySelectorAll('.add-quick-event-btn');
+quickAddBtns.forEach(btn => btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const day = btn.getAttribute('data-day');
+    document.getElementById('start_date').value = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const addEventModal = new bootstrap.Modal(document.getElementById('addEventModal'));
+    addEventModal.show();
+}));
+// Month navigation (placeholder, needs backend support for real navigation)
+document.getElementById('prevMonthBtn').addEventListener('click', function(){alert('Month navigation coming soon!');});
+document.getElementById('nextMonthBtn').addEventListener('click', function(){alert('Month navigation coming soon!');});
+</script>
 <style>
 .calendar-day {
     min-height: 80px;
     padding: 5px;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.calendar-day:hover {
+    background: #f0f8ff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 .calendar-grid .col {
     border: 1px solid rgba(255,255,255,0.1);
+}
+.modern-calendar-card {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    border-radius: 1.2rem;
+    border: none;
+    overflow: hidden;
+    animation: fadeInUp 0.7s cubic-bezier(.39,.575,.56,1.000) both;
+}
+.event-badge {
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background 0.2s, color 0.2s;
+}
+.event-badge:hover {
+    background: var(--bs-info);
+    color: #fff;
+}
+.add-quick-event-btn {
+    font-size: 0.8em;
+    padding: 0.1em 0.4em;
+    border-radius: 50%;
+    opacity: 0.7;
+    transition: opacity 0.2s, background 0.2s;
+}
+.add-quick-event-btn:hover {
+    opacity: 1;
+    background: var(--bs-success);
+    color: #fff;
+}
+@keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
 }
 </style>
 {% endblock %}

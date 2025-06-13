@@ -354,6 +354,30 @@ const StudentHub = {
         localStorage.removeItem(`studentHub_autosave_${formId}`);
     },
 
+    // Modern Task Interactions
+
+    markTaskComplete(checkbox) {
+        if (checkbox.checked) {
+            const taskId = checkbox.getAttribute('data-task-id');
+            fetch(`/tasks/${taskId}/complete`, { method: 'POST' })
+                .then(() => window.location.reload());
+        }
+    },
+
+    fillEditTaskForm(btn) {
+        const row = btn.closest('tr');
+        const taskId = btn.getAttribute('data-task-id');
+        document.getElementById('editTaskForm').setAttribute('action', `/tasks/${taskId}/edit`);
+        document.getElementById('edit_title').value = row.querySelector('h6').innerText;
+        document.getElementById('edit_description').value = row.querySelector('small') ? row.querySelector('small').innerText : '';
+        document.getElementById('edit_category').value = row.querySelector('.badge.bg-secondary').innerText.toLowerCase();
+        document.getElementById('edit_priority').value = row.querySelector('.badge.bg-danger, .badge.bg-warning, .badge.bg-info, .badge.bg-secondary').innerText.toLowerCase();
+        document.getElementById('edit_due_date').value = row.querySelector('td:nth-child(4)').innerText.trim().match(/\d{2}\/\d{2}\/\d{4}/) ? row.querySelector('td:nth-child(4)').innerText.trim().match(/\d{2}\/\d{2}\/\d{4}/)[0].split('/').reverse().join('-') : '';
+        // Course select left as default
+        const editModal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+        editModal.show();
+    },
+
     // Utility functions
     utils: {
         // Format date
@@ -435,6 +459,67 @@ const StudentHub = {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     StudentHub.init();
+
+    // Mark task as complete via checkbox
+    document.querySelectorAll('.mark-complete-checkbox').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            StudentHub.markTaskComplete(this);
+        });
+    });
+
+    // Edit task button opens modal and fills form
+    document.querySelectorAll('.edit-task-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            StudentHub.fillEditTaskForm(this);
+        });
+    });
+});
+
+// Calendar month navigation (client-side only)
+document.addEventListener('DOMContentLoaded', function() {
+    const prevBtn = document.getElementById('prevMonthBtn');
+    const nextBtn = document.getElementById('nextMonthBtn');
+    if (prevBtn && nextBtn) {
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        function updateCalendar(month, year) {
+            window.location.href = `?month=${month+1}&year=${year}`;
+        }
+        prevBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            updateCalendar(currentMonth, currentYear);
+        });
+        nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            updateCalendar(currentMonth, currentYear);
+        });
+    }
+});
+
+// Calendar quick add event (fix for modal and date)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.add-quick-event-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const day = btn.getAttribute('data-day');
+            const urlParams = new URLSearchParams(window.location.search);
+            const month = urlParams.get('month') ? parseInt(urlParams.get('month')) : (new Date().getMonth() + 1);
+            const year = urlParams.get('year') ? parseInt(urlParams.get('year')) : new Date().getFullYear();
+            document.getElementById('start_date').value = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const addEventModal = new bootstrap.Modal(document.getElementById('addEventModal'));
+            addEventModal.show();
+        });
+    });
 });
 
 // Export for use in other scripts

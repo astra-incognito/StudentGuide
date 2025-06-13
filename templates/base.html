@@ -1,127 +1,97 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Student Productivity Hub{% endblock %}</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome Icons -->
+    <title>{% block title %}Student Hub{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+        /* Custom styles for the navbar */
+        .custom-navbar {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .animated-nav {
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-item:hover .nav-link {
+            transform: translateY(-3px);
+        }
+
+        .settings-link {
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary custom-navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-                <i class="fas fa-graduation-cap"></i> Student Hub
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
+            <div class="d-flex align-items-center">
+                <a class="navbar-brand app-logo" href="/">
+                    <i class="fas fa-graduation-cap"></i> Student Hub
+                </a>
+            </div>
+            <div class="mx-auto">
+                <ul class="navbar-nav flex-row justify-content-center w-100 animated-nav">
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path == url_for('dashboard') %} active{% endif %}" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('tasks') }}">
-                            <i class="fas fa-tasks"></i> Tasks
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/tasks') %} active{% endif %}" href="{{ url_for('tasks') }}"><i class="fas fa-tasks"></i> Tasks</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('calendar') }}">
-                            <i class="fas fa-calendar"></i> Calendar
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/calendar') %} active{% endif %}" href="{{ url_for('calendar') }}"><i class="fas fa-calendar-alt"></i> Calendar</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('courses') }}">
-                            <i class="fas fa-book"></i> Courses
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/courses') %} active{% endif %}" href="{{ url_for('courses') }}"><i class="fas fa-book"></i> Courses</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('habits') }}">
-                            <i class="fas fa-chart-line"></i> Habits
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/habits') %} active{% endif %}" href="{{ url_for('habits') }}"><i class="fas fa-chart-line"></i> Habits</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('goals') }}">
-                            <i class="fas fa-bullseye"></i> Goals
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/goals') %} active{% endif %}" href="{{ url_for('goals') }}"><i class="fas fa-bullseye"></i> Goals</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('finances') }}">
-                            <i class="fas fa-dollar-sign"></i> Finances
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/finances') %} active{% endif %}" href="{{ url_for('finances') }}"><i class="fas fa-dollar-sign"></i> Finances</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('devotion') }}">
-                            <i class="fas fa-pray"></i> Devotion
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/devotion') %} active{% endif %}" href="{{ url_for('devotion') }}"><i class="fas fa-praying-hands"></i> Devotion</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('projects') }}">
-                            <i class="fas fa-project-diagram"></i> Projects
-                        </a>
-                    </li>
-                </ul>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('settings') }}">
-                            <i class="fas fa-cog"></i> Settings
-                        </a>
+                    <li class="nav-item mx-2">
+                        <a class="nav-link{% if request.path.startswith('/projects') %} active{% endif %}" href="{{ url_for('projects') }}"><i class="fas fa-project-diagram"></i> Projects</a>
                     </li>
                 </ul>
             </div>
+            <div class="d-flex align-items-center ms-auto">
+                <a class="nav-link settings-link" href="{{ url_for('settings') }}">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </div>
         </div>
     </nav>
-
-    <!-- Main Content -->
-    <main class="container-fluid" style="margin-top: 76px;">
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="row">
-                    <div class="col-12">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        {% endwith %}
-
+    
+    <main class="container mt-4">
         {% block content %}{% endblock %}
     </main>
-
-    <!-- Footer -->
+    
     <footer class="bg-dark text-light text-center py-3 mt-5">
         <div class="container">
-            <p>&copy; 2024 Student Productivity Hub - Empowering Student Success</p>
+            <p>&copy; 2024 Student Hub</p>
         </div>
     </footer>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom JavaScript -->
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    {% block scripts %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

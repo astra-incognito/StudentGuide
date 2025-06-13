@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from db_setup import db, migrate
@@ -18,6 +18,10 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 db.init_app(app)
 migrate.init_app(app, db)
+
+@app.context_processor
+def inject_request():
+    return dict(request=request)
 
 # Import routes after app creation to avoid circular imports
 from routes import *

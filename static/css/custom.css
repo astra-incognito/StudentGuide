@@ -55,6 +55,49 @@
     border-radius: var(--custom-border-radius);
 }
 
+/* Custom Navbar Layout */
+.custom-navbar .navbar-brand.app-logo {
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin-right: 2rem;
+    display: flex;
+    align-items: center;
+}
+.custom-navbar .navbar-brand.app-logo i {
+    margin-right: 0.5rem;
+    font-size: 2rem;
+}
+
+.custom-navbar .animated-nav .nav-link {
+    position: relative;
+    transition: color 0.2s, background 0.2s, transform 0.2s;
+    font-size: 1.1rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 2rem;
+    margin: 0 0.2rem;
+    z-index: 1;
+}
+.custom-navbar .animated-nav .nav-link:hover, .custom-navbar .animated-nav .nav-link.active {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    transform: translateY(-2px) scale(1.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.custom-navbar .settings-link {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-left: 1.5rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 2rem;
+    transition: background 0.2s, color 0.2s;
+}
+.custom-navbar .settings-link:hover, .custom-navbar .settings-link.active {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+}
+
 /* Dashboard specific styles */
 .dashboard-stat-card {
     background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
@@ -344,6 +387,17 @@ footer {
     }
 }
 
+@media (max-width: 991px) {
+    .custom-navbar .navbar-nav.flex-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    .custom-navbar .mx-auto {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
 /* Print styles */
 @media print {
     .navbar,
@@ -423,4 +477,51 @@ footer {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Modern Task Table Styles */
+.modern-task-card {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    border-radius: 1.2rem;
+    border: none;
+    overflow: hidden;
+    animation: fadeInUp 0.7s cubic-bezier(.39,.575,.56,1.000) both;
+}
+
+.task-row {
+    transition: background 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+.task-row:hover {
+    background: #f5faff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.mark-complete-checkbox {
+    accent-color: var(--bs-success);
+    width: 1.2em;
+    height: 1.2em;
+    margin-right: 0.7em;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+}
+
+.edit-task-btn {
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.edit-task-btn:hover {
+    background: var(--bs-primary);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

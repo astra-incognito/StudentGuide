@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Tasks - Student Hub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-tasks"></i> Task Management</h2>
+            
+            <div class="mb-4">
+                <button class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Task
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>My Tasks</h5>
+                </div>
+                <div class="card-body">
+                    {% if tasks %}
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in tasks %}
+                                    <tr>
+                                        <td>{{ task.title }}</td>
+                                        <td>{{ task.due_date }}</td>
+                                        <td>{{ task.status }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <h4>No tasks yet</h4>
+                            <p>Create your first task to get started</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -117,7 +117,8 @@ def tasks():
                          tasks=filtered_tasks, 
                          courses=courses,
                          filter_status=filter_status,
-                         filter_category=filter_category)
+                         filter_category=filter_category,
+                         today=date.today())
 
 @app.route('/tasks/add', methods=['POST'])
 def add_task():
@@ -168,17 +169,41 @@ def delete_task(task_id):
         flash('Task not found.', 'error')
     return redirect(url_for('tasks'))
 
+@app.route('/tasks/<task_id>', methods=['GET', 'POST'])
+def view_or_edit_task(task_id):
+    """View and edit a single task"""
+    task = Task.query.get_or_404(task_id)
+    courses = Course.query.all()
+    if request.method == 'POST':
+        task.title = request.form.get('title')
+        task.description = request.form.get('description')
+        task.category = request.form.get('category')
+        task.priority = request.form.get('priority')
+        due_date = request.form.get('due_date')
+        task.due_date = datetime.strptime(due_date, '%Y-%m-%d').date() if due_date else None
+        course_id = request.form.get('course_id')
+        task.course_id = course_id if course_id else None
+        db.session.commit()
+        flash('Task updated successfully!', 'success')
+        return redirect(url_for('tasks'))
+    return render_template('task_detail.html', task=task, courses=courses)
+
 @app.route('/calendar')
 def calendar():
-    """Calendar and scheduling view"""
+    """Calendar and scheduling view with month navigation"""
+    from calendar import monthrange
     today = date.today()
-    start_of_month = today.replace(day=1)
-    if today.month == 12:
-        end_of_month = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+    month = request.args.get('month', default=today.month, type=int)
+    year = request.args.get('year', default=today.year, type=int)
+    start_of_month = date(year, month, 1)
+    if month == 12:
+        end_of_month = date(year + 1, 1, 1) - timedelta(days=1)
     else:
-        end_of_month = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
+        end_of_month = date(year, month + 1, 1) - timedelta(days=1)
     events = CalendarEvent.query.filter(CalendarEvent.start_date >= start_of_month, CalendarEvent.start_date <= end_of_month).all()
-    return render_template('calendar.html', events=events, today=today)
+    # Pass a 'today' object for the selected month/year
+    today_for_view = date(year, month, today.day if year == today.year and month == today.month else 1)
+    return render_template('calendar.html', events=events, today=today_for_view)
 
 @app.route('/calendar/add', methods=['POST'])
 def add_calendar_event():
@@ -236,7 +261,7 @@ def add_course():
 def habits():
     """Habit tracking"""
     all_habits = Habit.query.all()
-    return render_template('habits.html', habits=all_habits, today=date.today())
+    return render_template('habits.html', habits=all_habits, today=date.today(), timedelta=timedelta)
 
 @app.route('/habits/add', methods=['POST'])
 def add_habit():
@@ -607,3 +632,18 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return render_template('base.html'), 500
+
+@app.route('/tasks/<task_id>/edit', methods=['POST'])
+def edit_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    task.title = request.form.get('title')
+    task.description = request.form.get('description')
+    task.category = request.form.get('category')
+    task.priority = request.form.get('priority')
+    due_date = request.form.get('due_date')
+    task.due_date = datetime.strptime(due_date, '%Y-%m-%d').date() if due_date else None
+    course_id = request.form.get('course_id')
+    task.course_id = course_id if course_id else None
+    db.session.commit()
+    flash('Task updated successfully!', 'success')
+    return redirect(url_for('tasks'))
